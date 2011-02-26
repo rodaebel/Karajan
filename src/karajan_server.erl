@@ -61,10 +61,10 @@ handle_info({udp, Socket, Ip, _Port, Packet}, State) ->
     inet:setopts(Socket, [{active, once}]),
     try osc_lib:decode(Packet) of
     	{message, Address, Args} ->
-            Path = string:tokens(Address, "/"),
-            gen_event:notify(karajan_event, {{ip, Ip}, Path, Args});
+            Data = {immediately, string:tokens(Address, "/"), Args},
+            gen_event:notify(karajan_event, {Socket, Ip, Data});
 	    {bundle, When, Elements} ->
-	        handle_bundle(When, Elements)
+	        handle_bundle(Socket, Ip, When, Elements)
     catch
 	    _:_ ->
 	        error_logger:error_msg("~p Decoding OSC failed~n", [self()])
@@ -88,16 +88,17 @@ code_change(_OldVsn, Library, _Extra) ->
 
 %% @private
 %% @doc Handles OSC bundles.
-%% @spec handle_bundle(When::time(), Elements::list()) -> any()
+%% @spec handle_bundle(Socket, Ip, When::time(), Elements::list()) -> any()
 %%       Elements = [message() | bundle()]
 %%       message() = {message, Address::string(), Args::[any()]}
 %%       bundle() = {bundle, When::time(), [message() | bundle()]}
 %%       time() = immediately | {time, Seconds::integer(), Fractions::integer()}
-handle_bundle(_When, []) ->
+handle_bundle(_Socket, _Ip, _When, []) ->
     ok;
-handle_bundle(When, [{message, Address, Args} | Rest]) ->
-    gen_event:notify(karajan_event, {When, string:tokens(Address, "/"), Args}),
-    handle_bundle(When, Rest);
-handle_bundle(When, [{bundle, InnerWhen, Elements} | Rest]) ->
-    handle_bundle(InnerWhen, Elements),
-    handle_bundle(When, Rest).
+handle_bundle(Socket, Ip, When, [{message, Address, Args} | Rest]) ->
+    Data = {When, string:tokens(Address, "/"), Args},
+    gen_event:notify(karajan_event, {Socket, Ip, Data}),
+    handle_bundle(Socket, Ip, When, Rest);
+handle_bundle(Socket, Ip, When, [{bundle, InnerWhen, Elements} | Rest]) ->
+    handle_bundle(Socket, Ip, InnerWhen, Elements),
+    handle_bundle(Socket, Ip, When, Rest).

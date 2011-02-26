@@ -35,10 +35,10 @@ init(_Args) ->
 %% @private
 %% @doc Handles events.
 %% @spec handle_event(Event, State) -> {ok, State}
-handle_event({_,[_,"start_stop"],[1.0]}, State)->
+handle_event({_,_,{_,[_,"start_stop"],[1.0]}}, State)->
     gen_server:cast(karajan_clock, start),
     {ok, State};
-handle_event({_,[_,"start_stop"],[0.0]}, State)->
+handle_event({_,_,{_,[_,"start_stop"],[0.0]}}, State)->
     gen_server:cast(karajan_clock, stop),
     {ok, State};
 handle_event(Event, State)->
