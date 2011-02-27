@@ -38,5 +38,10 @@ init([]) ->
     Clock = {
         karajan_clock, {karajan_clock, start_link, []},
 	    permanent, 2000, worker, [karajan_clock]},
+    %% A ZeroConf server enables Karajan for automatic discovery of devices.
+    ZeroConf = {
+        karajan_zeroconf, {karajan_zeroconf, start_link, []},
+	    permanent, 2000, worker, [karajan_zeroconf]},
 
-    {ok, {{one_for_one, 3, 10}, [Server, Event, Guard, Clock]}}.
+
+    {ok, {{one_for_one, 3, 10}, [Server, Event, Guard, Clock, ZeroConf]}}.
