@@ -61,8 +61,8 @@ handle_info({udp, Socket, Ip, _Port, Packet}, State) ->
     inet:setopts(Socket, [{active, once}]),
     try osc_lib:decode(Packet) of
     	{message, Address, Args} ->
-            Data = {immediately, string:tokens(Address, "/"), Args},
-            gen_event:notify(karajan_event, {Socket, Ip, Data});
+            Message = {immediately, string:tokens(Address, "/"), Args},
+            gen_event:notify(karajan_event, {Message, Socket, Ip});
 	    {bundle, When, Elements} ->
 	        handle_bundle(Socket, Ip, When, Elements)
     catch
@@ -96,8 +96,8 @@ code_change(_OldVsn, Library, _Extra) ->
 handle_bundle(_Socket, _Ip, _When, []) ->
     ok;
 handle_bundle(Socket, Ip, When, [{message, Address, Args} | Rest]) ->
-    Data = {When, string:tokens(Address, "/"), Args},
-    gen_event:notify(karajan_event, {Socket, Ip, Data}),
+    Message = {When, string:tokens(Address, "/"), Args},
+    gen_event:notify(karajan_event, {Message, Socket, Ip}),
     handle_bundle(Socket, Ip, When, Rest);
 handle_bundle(Socket, Ip, When, [{bundle, InnerWhen, Elements} | Rest]) ->
     handle_bundle(Socket, Ip, InnerWhen, Elements),
