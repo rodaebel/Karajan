@@ -2,7 +2,7 @@
 %% @doc Karajan OSC Server
 %%
 %% The server process listens for incoming UDP packets. It decodes received
-%% data and fires events containg the OSC message.
+%% data and fires events containing the OSC message.
 
 -module(karajan_server).
 -vsn("1.0.0").
