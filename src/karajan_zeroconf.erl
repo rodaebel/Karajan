@@ -6,7 +6,7 @@
 -behaviour(gen_server).
 
 %% Server API
--export([start_link/0]).
+-export([start_link/0, send/1]).
 
 %% Callbacks of the gen_server behaviour
 -export([init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2,
@@ -75,3 +75,17 @@ terminate(_Reason, State) ->
 %% @spec code_change(OldVsn, Library, Extra) -> {ok, Library}
 code_change(_OldVsn, Library, _Extra) ->
     {ok, Library}.
+
+
+%% @doc Sends ZeroConf packets.
+%%      Taken from Jarrod Roberson's implementation. See his blog for details:
+%%      http://www.vertigrated.com/blog/2009/11/bonjour-zeroconf-in-erlang
+%% @spec send(Domain) -> any()
+send(Domain) ->
+    Options = [binary, {reuseaddr,true}, {ip,{224,0,0,251}}, {multicast_ttl,4},
+               {multicast_loop,false}, {broadcast,true}],
+    {ok, Socket} = gen_udp:open(5353, Options),
+	Packet = #dns_rec{header=#dns_header{},
+                      qdlist=[#dns_query{domain=Domain,type=ptr,class=in}]},
+	gen_udp:send(Socket, {224,0,0,251}, 5353, inet_dns:encode(Packet)),
+	gen_udp:close(Socket).
