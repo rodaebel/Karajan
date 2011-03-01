@@ -32,13 +32,13 @@ init([]) ->
     Options = [binary, {reuseaddr,true}, {ip,Address}, {multicast_ttl,4},
                {multicast_loop,false}],
     case gen_udp:open(Port, Options) of
-    	{ok, Socket} ->
+        {ok, Socket} ->
             inet:setopts(Socket,[{add_membership,{Address,{0,0,0,0}}}]),
             State = #zeroconf_state{port=Port, socket=Socket},
-	        {ok, State};
-	    {error, Reason} ->
-	        error_logger:error_report({?MODULE, udp_open, Reason}),
-	        {stop, {?MODULE, udp_open, Reason}}
+            {ok, State};
+        {error, Reason} ->
+            error_logger:error_report({?MODULE, udp_open, Reason}),
+            {stop, {?MODULE, udp_open, Reason}}
     end.
 
 %% @private
@@ -85,7 +85,7 @@ send(Domain) ->
     Options = [binary, {reuseaddr,true}, {ip,{224,0,0,251}}, {multicast_ttl,4},
                {multicast_loop,false}, {broadcast,true}],
     {ok, Socket} = gen_udp:open(5353, Options),
-	Packet = #dns_rec{header=#dns_header{},
+    Packet = #dns_rec{header=#dns_header{},
                       qdlist=[#dns_query{domain=Domain,type=ptr,class=in}]},
-	gen_udp:send(Socket, {224,0,0,251}, 5353, inet_dns:encode(Packet)),
-	gen_udp:close(Socket).
+    gen_udp:send(Socket, {224,0,0,251}, 5353, inet_dns:encode(Packet)),
+    gen_udp:close(Socket).
