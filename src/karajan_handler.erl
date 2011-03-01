@@ -46,6 +46,9 @@ handle_event({{_When,[_,"start_stop"],[0.0]},_Socket,_Ip}, State)->
 handle_event({{_When,["accxyz"],XYZ},_Socket,_Ip}, State)->
     ?WEBSOCKET_BROADCAST ! {accelerometer, XYZ},
     {ok, State};
+handle_event({{_When,[_,"scale"],S},_Socket,_Ip}, State)->
+    ?WEBSOCKET_BROADCAST ! {scale, S},
+    {ok, State};
 handle_event(Event, State)->
     error_logger:info_msg("~p ~p~n", [self(), Event]),
     {ok, State}.
