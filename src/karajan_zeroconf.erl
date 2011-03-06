@@ -33,7 +33,7 @@ init([]) ->
                {multicast_loop,false}],
     case gen_udp:open(Port, Options) of
         {ok, Socket} ->
-            inet:setopts(Socket,[{add_membership,{Address,{0,0,0,0}}}]),
+            inet:setopts(Socket, [{add_membership,{Address,{0,0,0,0}}}]),
             State = #zeroconf_state{port=Port, socket=Socket},
             {ok, State};
         {error, Reason} ->
