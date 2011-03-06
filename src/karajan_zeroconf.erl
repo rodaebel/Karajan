@@ -56,12 +56,28 @@ handle_cast(_Msg, State) ->
 %% @private
 %% @doc Handles all non call/cast messages.
 %% @spec handle_info(Info, State) -> {noreply, State}
-handle_info({udp, _Socket, Ip, Port, Packet}, State) ->
-    error_logger:info_msg("~p From: ~p~nPort: ~p~nData: ~p~n",
-                          [self(), Ip, Port, inet_dns:decode(Packet)]),
+handle_info({udp, _Socket, _Ip, _Port, Packet}, State) ->
+    process_dnsrec(inet_dns:decode(Packet)),
     {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
+
+%% @private
+%% @doc Processes DNS record.
+%% @spec process_dnsrec(Record) -> any()
+process_dnsrec({ok, #dns_rec{anlist=Responses}}) ->
+    process_responses(Responses).
+
+%% @private
+%% @doc Process DNS responses.
+%% @spec process_responses(Responses::list()) -> ok
+process_responses([]) ->
+    ok;
+process_responses([Response|Rest]) ->
+    Domain = Response#dns_rr.domain,
+    Data = Response#dns_rr.data,
+    error_logger:info_msg("~p ~p ~p~n", [self(), Domain, Data]),
+    process_responses(Rest).
 
 %% @private
 %% @doc Performs cleanup on termination.
@@ -75,7 +91,6 @@ terminate(_Reason, State) ->
 %% @spec code_change(OldVsn, Library, Extra) -> {ok, Library}
 code_change(_OldVsn, Library, _Extra) ->
     {ok, Library}.
-
 
 %% @doc Sends ZeroConf packets.
 %%      Taken from Jarrod Roberson's implementation. See his blog for details:
