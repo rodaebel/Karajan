@@ -13,6 +13,7 @@
                     %% :2   unused bits
      rcode = 0      %% :4   response code
     }).
+
 -record(dns_rec,
     {
      header,        %% dns_header record
