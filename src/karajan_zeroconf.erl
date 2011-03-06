@@ -12,9 +12,9 @@
 -export([init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2]).
 
--include("karajan.hrl").
+-include_lib("kernel/src/inet_dns.hrl").
 
--include("zeroconf.hrl").
+-include("karajan.hrl").
 
 -define(SERVER, ?MODULE). 
 
