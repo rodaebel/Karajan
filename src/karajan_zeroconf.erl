@@ -65,19 +65,21 @@ handle_info(_Info, State) ->
 %% @private
 %% @doc Processes DNS record.
 %% @spec process_dnsrec(Record) -> any()
-process_dnsrec({ok, #dns_rec{anlist=Responses}}) ->
-    process_responses(Responses).
+process_dnsrec({ok, #dns_rec{anlist=[]}}) ->
+    ok;
+process_dnsrec({ok, #dns_rec{anlist=Records}}) ->
+    Val = process_records(Records, []),
+    error_logger:info_msg("~p Recs: ~p~nVal: ~p~n", [self(), Records, Val]).
 
 %% @private
-%% @doc Process DNS responses.
-%% @spec process_responses(Responses::list()) -> ok
-process_responses([]) ->
-    ok;
-process_responses([Response|Rest]) ->
-    Domain = Response#dns_rr.domain,
-    Data = Response#dns_rr.data,
-    error_logger:info_msg("~p ~p ~p~n", [self(), Domain, Data]),
-    process_responses(Rest).
+%% @doc Process DNS resource records.
+%% @spec process_records(Records::list(), Acc::list()) -> ok
+process_records([], Acc) ->
+    lists:reverse(Acc);
+process_records([#dns_rr{domain=Domain}|Rest], Acc) ->
+    process_records(Rest, [Domain|Acc]);
+process_records([_|Rest], Acc) ->
+    process_records(Rest, Acc).
 
 %% @private
 %% @doc Performs cleanup on termination.
