@@ -43,5 +43,4 @@ init([]) ->
         karajan_zeroconf, {karajan_zeroconf, start_link, []},
 	    permanent, 2000, worker, [karajan_zeroconf]},
 
-
     {ok, {{one_for_one, 3, 10}, [Server, Event, Guard, Clock, ZeroConf]}}.
