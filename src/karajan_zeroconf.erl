@@ -6,7 +6,7 @@
 -behaviour(gen_server).
 
 %% Server API
--export([start_link/0, send/1]).
+-export([start_link/0]).
 
 %% Callbacks of the gen_server behaviour
 -export([init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2,
@@ -16,12 +16,21 @@
 
 -include("karajan.hrl").
 
+-record(client, {key, host, port, modified}).
+
 -define(SERVER, ?MODULE). 
 
 %% @doc Starts the server.
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Reason}
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+%% @private
+%% @doc Gets a timestamp in milliseconds from the epoch.
+%% @spec get_timestamp() -> integer()
+get_timestamp() ->
+    {Mega,Sec,Micro} = erlang:now(),
+    (Mega * 1000000 + Sec) * 1000000 + Micro.
 
 %% @private
 %% @doc Initializes the server.
@@ -34,7 +43,8 @@ init([]) ->
     case gen_udp:open(Port, Options) of
         {ok, Socket} ->
             inet:setopts(Socket, [{add_membership,{Address,{0,0,0,0}}}]),
-            State = #zeroconf_state{port=Port, socket=Socket},
+            Clients = dict:new(),
+            State = #zeroconf_state{port=Port, socket=Socket, clients=Clients},
             {ok, State};
         {error, Reason} ->
             error_logger:error_report({?MODULE, udp_open, Reason}),
@@ -43,7 +53,10 @@ init([]) ->
 
 %% @private
 %% @doc Handles call messages.
-%% @spec handle_call(Request, From, State) -> {noreply, State}
+%% @spec handle_call(Request, From, State) -> {reply, Reply, State} |
+%%                                            {noreply, State}
+handle_call(get_clients, _From, State) ->
+    {reply, dict:fetch_keys(State#zeroconf_state.clients), State};
 handle_call(_Request, _From, State) ->
     {noreply, State}.
 
@@ -56,9 +69,16 @@ handle_cast(_Msg, State) ->
 %% @private
 %% @doc Handles all non call/cast messages.
 %% @spec handle_info(Info, State) -> {noreply, State}
-handle_info({udp, _Socket, _Ip, _Port, Packet}, State) ->
-    process_dnsrec(inet_dns:decode(Packet)),
-    {noreply, State};
+handle_info({udp, _Socket, _Ip, _Port, Packet},
+            #zeroconf_state{port=Port,socket=Socket,clients=Clients} = State) ->
+    case process_dnsrec(inet_dns:decode(Packet)) of
+        [] ->
+            {noreply, State};
+        [Client] ->
+            Dict = dict:store(Client#client.key, Client, Clients),
+            error_logger:info_msg("~p ~p~n", [self(), Client]),
+            {noreply, #zeroconf_state{port=Port,socket=Socket,clients=Dict}}
+    end;
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -66,18 +86,19 @@ handle_info(_Info, State) ->
 %% @doc Processes DNS record.
 %% @spec process_dnsrec(Record) -> any()
 process_dnsrec({ok, #dns_rec{anlist=[]}}) ->
-    ok;
+    [];
 process_dnsrec({ok, #dns_rec{anlist=Records}}) ->
-    Val = process_records(Records, []),
-    error_logger:info_msg("~p Recs: ~p~nVal: ~p~n", [self(), Records, Val]).
+    process_records(Records, []).
 
 %% @private
 %% @doc Process DNS resource records.
 %% @spec process_records(Records::list(), Acc::list()) -> ok
 process_records([], Acc) ->
     lists:reverse(Acc);
-process_records([#dns_rr{domain=Domain}|Rest], Acc) ->
-    process_records(Rest, [Domain|Acc]);
+process_records([#dns_rr{domain=Domain, type=srv, data=Data}|Rest], Acc) ->
+    {_,_,Port,Host} = Data,
+    Client = #client{key=Domain,host=Host,port=Port,modified=get_timestamp()},
+    process_records(Rest, [Client|Acc]);
 process_records([_|Rest], Acc) ->
     process_records(Rest, Acc).
 
@@ -93,16 +114,3 @@ terminate(_Reason, State) ->
 %% @spec code_change(OldVsn, Library, Extra) -> {ok, Library}
 code_change(_OldVsn, Library, _Extra) ->
     {ok, Library}.
-
-%% @doc Sends ZeroConf packets.
-%%      Taken from Jarrod Roberson's implementation. See his blog for details:
-%%      http://www.vertigrated.com/blog/2009/11/bonjour-zeroconf-in-erlang
-%% @spec send(Domain) -> any()
-send(Domain) ->
-    Options = [binary, {reuseaddr,true}, {ip,{224,0,0,251}}, {multicast_ttl,4},
-               {multicast_loop,false}, {broadcast,true}],
-    {ok, Socket} = gen_udp:open(5353, Options),
-    Packet = #dns_rec{header=#dns_header{},
-                      qdlist=[#dns_query{domain=Domain,type=ptr,class=in}]},
-    gen_udp:send(Socket, {224,0,0,251}, 5353, inet_dns:encode(Packet)),
-    gen_udp:close(Socket).
