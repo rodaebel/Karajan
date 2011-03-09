@@ -16,9 +16,11 @@
 
 -include("karajan.hrl").
 
--record(client, {key, host, port, modified}).
+-record(client, {key, domain, host, port, modified}).
 
 -define(SERVER, ?MODULE). 
+
+-define(OSC_DOMAIN, "_osc._udp.local").
 
 %% @doc Starts the server.
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Reason}
@@ -88,19 +90,31 @@ handle_info(_Info, State) ->
 process_dnsrec({ok, #dns_rec{anlist=[]}}) ->
     [];
 process_dnsrec({ok, #dns_rec{anlist=Records}}) ->
-    process_records(Records, []).
+    process_records(Records, #client{}).
 
 %% @private
 %% @doc Process DNS resource records.
 %% @spec process_records(Records::list(), Acc::list()) -> ok
-process_records([], Acc) ->
-    lists:reverse(Acc);
-process_records([#dns_rr{domain=Domain, type=srv, data=Data}|Rest], Acc) ->
+process_records([], #client{key=Key,domain=Domain} = Client) ->
+    case {Key, Domain} of
+        {undefined, _} ->
+            [];
+        {_, ?OSC_DOMAIN} ->
+            [Client]
+    end;
+process_records([#dns_rr{domain=Key,type=srv,data=Data}|Rest],
+                #client{domain=Domain} = _Client) ->
     {_,_,Port,Host} = Data,
-    Client = #client{key=Domain,host=Host,port=Port,modified=get_timestamp()},
-    process_records(Rest, [Client|Acc]);
-process_records([_|Rest], Acc) ->
-    process_records(Rest, Acc).
+    T = get_timestamp(),
+    Cli = #client{key=Key,domain=Domain,host=Host,port=Port,modified=T},
+    process_records(Rest, Cli);
+process_records([#dns_rr{domain=?OSC_DOMAIN,type=ptr}|Rest],
+                #client{key=Key,host=Host,port=Port} = _Client) ->
+    T = get_timestamp(),
+    Cli = #client{key=Key,host=Host,domain=?OSC_DOMAIN,port=Port,modified=T},
+    process_records(Rest, Cli);
+process_records([_|Rest], Client) ->
+    process_records(Rest, Client).
 
 %% @private
 %% @doc Performs cleanup on termination.
