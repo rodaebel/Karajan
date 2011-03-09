@@ -18,5 +18,6 @@ clean-docs:
 	rm -f doc/edoc-info doc/*.html doc/*.css doc/*.png
 
 test: compile
-	@$(ERL) -pa ebin -eval "eunit:test({application,$(APP)})" \
+	@$(ERL) -pa ebin -eval \
+	"eunit:test({application,$(APP)}),eunit:test(karajan_zeroconf)" \
 	-noshell -s init stop

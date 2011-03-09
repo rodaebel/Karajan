@@ -14,6 +14,8 @@
 
 -include_lib("kernel/src/inet_dns.hrl").
 
+-include_lib("eunit/include/eunit.hrl").
+
 -record(state, {port=null, socket=null, clients=null}).
 
 -record(client, {key, domain, host, port, modified}).
@@ -91,6 +93,34 @@ process_dnsrec({ok, #dns_rec{anlist=[]}}) ->
     [];
 process_dnsrec({ok, #dns_rec{anlist=Records}}) ->
     process_records(Records, #client{}).
+
+%% @hidden
+process_dnsrec_test_() ->
+    R = {ok,{dns_rec,{dns_header,0,true,'query',true,false,false,false,false,0},
+             [],
+             [{dns_rr,"Joshua [iPhone] (TouchOSC)._osc._udp.local",txt,32769,
+                      0,4500,
+                      [[]],
+                      undefined,[],false},
+              {dns_rr,"_services._dns-sd._udp.local",ptr,in,0,4500,
+                      "_osc._udp.local",undefined,[],false},
+              {dns_rr,"_osc._udp.local",ptr,in,0,4500,
+                      "Joshua [iPhone] (TouchOSC)._osc._udp.local",undefined,
+                      [],false},
+              {dns_rr,"Joshua [iPhone] (TouchOSC)._osc._udp.local",srv,32769,
+                      0,120,
+                      {0,0,7124,"Joshua.local"},
+                      undefined,[],false}],
+             [],
+             [{dns_rr,"Joshua [iPhone] (TouchOSC)._osc._udp.local",47,32769,0,
+                      4500,
+                      <<192,12,0,5,0,0,128,0,64>>,
+                      undefined,[],false}]}},
+    [{client, Name, Domain, Host, Port, _}] = process_dnsrec(R),
+    [?_assertEqual("Joshua [iPhone] (TouchOSC)._osc._udp.local", Name),
+     ?_assertEqual("_osc._udp.local", Domain),
+     ?_assertEqual("Joshua.local", Host),
+     ?_assertEqual(7124, Port)].
 
 %% @private
 %% @doc Process DNS resource records.
