@@ -18,6 +18,8 @@
 
 -include("karajan.hrl").
 
+-record(state, {socket=null}).
+
 -define(SERVER, ?MODULE). 
 
 %% @doc Starts the server.
@@ -36,7 +38,7 @@ init([]) ->
     case gen_udp:open(Port, Options) of
     	{ok, Socket} ->
             error_logger:info_msg("~p Listening on port ~p~n", [self(), Port]),
-	        {ok, #server_state{socket = Socket}};
+	        {ok, #state{socket = Socket}};
 	    {error, Reason} ->
 	        error_logger:error_report({?MODULE, udp_open, Reason}),
 	        {stop, {?MODULE, udp_open, Reason}}
@@ -77,7 +79,7 @@ handle_info(_Info, State) ->
 %% @doc Performs cleanup on termination.
 %% @spec terminate(Reason, State) -> ok
 terminate(_Reason, State) ->
-    gen_udp:close(State#server_state.socket),
+    gen_udp:close(State#state.socket),
     ok.
 
 %% @private

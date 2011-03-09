@@ -14,7 +14,7 @@
 
 -include_lib("kernel/src/inet_dns.hrl").
 
--include("karajan.hrl").
+-record(state, {port=null, socket=null, clients=null}).
 
 -record(client, {key, domain, host, port, modified}).
 
@@ -46,7 +46,7 @@ init([]) ->
         {ok, Socket} ->
             inet:setopts(Socket, [{add_membership,{Address,{0,0,0,0}}}]),
             Clients = dict:new(),
-            State = #zeroconf_state{port=Port, socket=Socket, clients=Clients},
+            State = #state{port=Port, socket=Socket, clients=Clients},
             {ok, State};
         {error, Reason} ->
             error_logger:error_report({?MODULE, udp_open, Reason}),
@@ -58,7 +58,7 @@ init([]) ->
 %% @spec handle_call(Request, From, State) -> {reply, Reply, State} |
 %%                                            {noreply, State}
 handle_call(get_clients, _From, State) ->
-    {reply, dict:fetch_keys(State#zeroconf_state.clients), State};
+    {reply, dict:fetch_keys(State#state.clients), State};
 handle_call(_Request, _From, State) ->
     {noreply, State}.
 
@@ -72,14 +72,14 @@ handle_cast(_Msg, State) ->
 %% @doc Handles all non call/cast messages.
 %% @spec handle_info(Info, State) -> {noreply, State}
 handle_info({udp, _Socket, _Ip, _Port, Packet},
-            #zeroconf_state{port=Port,socket=Socket,clients=Clients} = State) ->
+            #state{port=Port,socket=Socket,clients=Clients} = State) ->
     case process_dnsrec(inet_dns:decode(Packet)) of
         [] ->
             {noreply, State};
         [Client] ->
             Dict = dict:store(Client#client.key, Client, Clients),
             error_logger:info_msg("~p ~p~n", [self(), Client]),
-            {noreply, #zeroconf_state{port=Port,socket=Socket,clients=Dict}}
+            {noreply, #state{port=Port,socket=Socket,clients=Dict}}
     end;
 handle_info(_Info, State) ->
     {noreply, State}.
@@ -120,7 +120,7 @@ process_records([_|Rest], Client) ->
 %% @doc Performs cleanup on termination.
 %% @spec terminate(Reason, State) -> ok
 terminate(_Reason, State) ->
-    gen_udp:close(State#zeroconf_state.socket),
+    gen_udp:close(State#state.socket),
     ok.
 
 %% @private

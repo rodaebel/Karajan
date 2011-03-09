@@ -12,7 +12,7 @@
 -export([init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2]).
 
--include("karajan.hrl").
+-record(state, {run=false, proc=null, port=null, socket=null}).
 
 -define(SERVER, ?MODULE). 
 
@@ -31,7 +31,7 @@ init([]) ->
     Options = [binary, {broadcast, true}],
     case gen_udp:open(0, Options) of
     	{ok, Socket} ->
-            State = #clock_state{port=Port, socket=Socket},
+            State = #state{port=Port, socket=Socket},
 	        {ok, State};
 	    {error, Reason} ->
 	        error_logger:error_report({?MODULE, udp_open, Reason}),
@@ -47,7 +47,7 @@ handle_call(_Request, _From, State) ->
 %% @private
 %% @doc Handles cast messages.
 %% @spec handle_cast(Msg, State) -> {noreply, State}
-handle_cast(start, State = #clock_state{run=Run,port=Port,socket=Socket}) ->
+handle_cast(start, State = #state{run=Run,port=Port,socket=Socket}) ->
     case Run of
     false ->
         Time = calendar:universal_time(),
@@ -55,15 +55,15 @@ handle_cast(start, State = #clock_state{run=Run,port=Port,socket=Socket}) ->
         Pid = spawn_link(?MODULE, loop, [{Socket, Port, Time}]),
         Msg = {message, "/1/start_stop", [1.0]},
         gen_udp:send(Socket, ?BROADCAST_ADDR, Port, osc_lib:encode(Msg)),
-        {noreply, #clock_state{run=true,proc=Pid,port=Port,socket=Socket}};
+        {noreply, #state{run=true,proc=Pid,port=Port,socket=Socket}};
     true ->
         {noreply, State}
     end;
-handle_cast(stop, #clock_state{proc=Pid,port=Port,socket=Socket}) ->
+handle_cast(stop, #state{proc=Pid,port=Port,socket=Socket}) ->
     exit(Pid, stop),
     Msg = {message, "/1/start_stop", [0.0]},
     gen_udp:send(Socket, ?BROADCAST_ADDR, Port, osc_lib:encode(Msg)),
-    {noreply, #clock_state{run=false,port=Port,socket=Socket}};
+    {noreply, #state{run=false,port=Port,socket=Socket}};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -77,7 +77,7 @@ handle_info(_Info, State) ->
 %% @doc Performs cleanup on termination.
 %% @spec terminate(Reason, State) -> ok
 terminate(_Reason, State) ->
-    gen_udp:close(State#clock_state.socket),
+    gen_udp:close(State#state.socket),
     ok.
 
 %% @private
