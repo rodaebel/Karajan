@@ -127,10 +127,10 @@ process_dnsrec_test_() ->
 %% @spec process_records(Records::list(), Acc::list()) -> ok
 process_records([], #client{key=Key,domain=Domain} = Client) ->
     case {Key, Domain} of
-        {undefined, _} ->
-            [];
         {_, ?OSC_DOMAIN} ->
-            [Client]
+            [Client];
+        _ ->
+            []
     end;
 process_records([#dns_rr{domain=Key,type=srv,data=Data}|Rest],
                 #client{domain=Domain} = _Client) ->
