@@ -12,7 +12,7 @@
 -export([init/1, code_change/3, handle_event/2, handle_call/2, handle_info/2,
          terminate/2]).
 
--define(WEBSOCKET_BROADCAST, {websocket_broadcast, websocket@localhost}).
+-define(WEBSOCKET_SERVER, {websocket_server, websocket@localhost}).
 
 %% @doc Starts the handler.
 %% @spec start(Options) -> already_started | ok
@@ -44,13 +44,13 @@ handle_event({{_When,[_,"start_stop"],[0.0]},_Socket,_Ip}, State)->
     gen_server:cast(karajan_clock, stop),
     {ok, State};
 handle_event({{_When,["accxyz"],XYZ},_Socket,_Ip}, State)->
-    ?WEBSOCKET_BROADCAST ! {accelerometer, XYZ},
+    gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ}),
     {ok, State};
 handle_event({{_When,[_,"scale"],S},_Socket,_Ip}, State)->
-    ?WEBSOCKET_BROADCAST ! {scale, S},
+    gen_server:cast(?WEBSOCKET_SERVER, {scale, S}),
     {ok, State};
 handle_event({{_When,[_,"fader1"],S},_Socket,_Ip}, State)->
-    ?WEBSOCKET_BROADCAST ! {scale, S},
+    gen_server:cast(?WEBSOCKET_SERVER, {scale, S}),
     {ok, State};
 handle_event(Event, State)->
     error_logger:info_msg("~p ~p~n", [self(), Event]),
