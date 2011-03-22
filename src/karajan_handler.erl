@@ -12,22 +12,24 @@
 -export([init/1, code_change/3, handle_event/2, handle_call/2, handle_info/2,
          terminate/2]).
 
+-define(EVENT_MANAGER, tosca_event).
+
 -define(WEBSOCKET_SERVER, {websocket_server, websocket@localhost}).
 
 %% @doc Starts the handler.
 %% @spec start(Options) -> already_started | ok
 start(Options) ->
-    case lists:member(?MODULE, gen_event:which_handlers(karajan_event)) of
+    case lists:member(?MODULE, gen_event:which_handlers(?EVENT_MANAGER)) of
         true  ->
             already_started;
         false ->
-            gen_event:add_sup_handler(karajan_event, ?MODULE, Options)
+            gen_event:add_sup_handler(?EVENT_MANAGER, ?MODULE, Options)
     end.
 
 %% @doc Stops the handler.
 %% @spec stop() -> ok
 stop() ->
-    gen_event:delete_handler(karajan_event, ?MODULE, []).
+    gen_event:delete_handler(?EVENT_MANAGER, ?MODULE, []).
 
 %% @doc Initializes the handler.
 %% @spec init(Args) -> {ok, initialized}
