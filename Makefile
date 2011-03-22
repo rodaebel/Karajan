@@ -3,11 +3,13 @@ ERLC=erlc
 APP=karajan
 
 all: compile
+	@cd lib/Tosca; $(MAKE)
 
 compile:
 	@$(ERL) -pa ebin/ -make
 
 clean:
+	@cd lib/Tosca; $(MAKE) clean
 	rm -f ebin/*.beam
 
 docs:
@@ -19,5 +21,5 @@ clean-docs:
 
 test: compile
 	@$(ERL) -pa ebin -eval \
-	"eunit:test({application,$(APP)}),eunit:test(karajan_zeroconf)" \
+	"eunit:test({application,$(APP)})" \
 	-noshell -s init stop

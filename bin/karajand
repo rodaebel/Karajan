@@ -80,9 +80,10 @@ cd "$PWD";
 ERL_OPTS="
     -setcookie $COOKIE \
     -pa $CWD/ebin \
+    -pa $CWD/lib/Tosca/ebin \
     -sname karajan@localhost \
     $CONFIG \
-    -s karajan"
+    -s karajan -s tosca"
 
 if [ "$MONITOR" = "false" ]; then
     eval $ERL $ERL_OPTS $DETACHED_OPTION start -noshell
