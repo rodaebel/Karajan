@@ -1,3 +1,0 @@
-[submodule "lib/Tosca"]
-	path = lib/Tosca
-	url = git://github.com/rodaebel/Tosca.git
