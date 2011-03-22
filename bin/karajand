@@ -1,10 +1,9 @@
 #!/bin/sh
-cd `dirname $0`;
-CWD=`dirname "$PWD" | sed -e 's, ,\\\\ ,g'`;
-cd "$PWD";
+
 BASENAME=`basename $0`
 MONITOR="false"
 DETACHED_OPTION=""
+CONFIG=""
 COOKIE="cookie"
 ERL=erl
 
@@ -28,6 +27,9 @@ do
 
    case "$_option" in
 
+   --config=*)
+      CONFIG="$_optarg" ;;
+
    --cookie=*)
       COOKIE="$_optarg" ;;
 
@@ -39,6 +41,7 @@ do
       cat << EOF
 
 Options:
+      --config=FILE     use this config file
       --cookie=COOKIE   use this cookie
    -d,--detached        starts the service detached from the system console
    -h,--help            display this message
@@ -60,10 +63,25 @@ EOF
    esac
 done
 
+if [[ ! $CONFIG =~ /^\/.*/ ]]; then
+    CONFIG=$PWD/$CONFIG;
+fi
+
+if test -f "$CONFIG"; then
+    CONFIG="-config $CONFIG";
+else
+    CONFIG=""
+fi
+
+cd `dirname $0`;
+CWD=`dirname "$PWD" | sed -e 's, ,\\\\ ,g'`;
+cd "$PWD";
+
 ERL_OPTS="
     -setcookie $COOKIE \
     -pa $CWD/ebin \
     -sname karajan@localhost \
+    $CONFIG \
     -s karajan"
 
 if [ "$MONITOR" = "false" ]; then
