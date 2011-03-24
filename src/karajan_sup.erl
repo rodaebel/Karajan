@@ -20,9 +20,14 @@ start_link() ->
 %% @spec init(Args) -> {ok, {SupFlags, ChildSpecs}} | ignore | {error, Reason}
 init([]) ->
 
+    %% The Karajan server.
+    Server = {
+        karajan_server, {karajan_server, start_link, []},
+	    permanent, 2000, worker, [karajan_server]},
+
     %% A ZeroConf server enables Karajan for automatic discovery of devices.
     ZeroConf = {
         karajan_zeroconf, {karajan_zeroconf, start_link, []},
 	    permanent, 2000, worker, [karajan_zeroconf]},
 
-    {ok, {{one_for_one, 3, 10}, [ZeroConf]}}.
+    {ok, {{one_for_one, 3, 10}, [Server, ZeroConf]}}.
