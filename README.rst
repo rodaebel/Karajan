@@ -27,5 +27,9 @@ Building and Running
 
 In order to build and run the server, enter the following commands::
 
-  $ make
+  $ rebar get-deps
+  $ rebar compile
   $ bin/karajand
+
+See the `rebar home page <http://bitbucket.org/basho/rebar/wiki/Home>`_ for
+further information on how to install and use the `rebar` command.

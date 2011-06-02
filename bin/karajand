@@ -80,7 +80,7 @@ cd "$PWD";
 ERL_OPTS="
     -setcookie $COOKIE \
     -pa $CWD/ebin \
-    -pa $CWD/lib/Tosca/ebin \
+    -pa $CWD/deps/tosca/ebin \
     -sname karajan@localhost \
     $CONFIG \
     -s karajan -s tosca"
