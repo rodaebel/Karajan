@@ -39,12 +39,6 @@ init(_Args) ->
 %% @private
 %% @doc Handles events.
 %% @spec handle_event(Event, State) -> {ok, State}
-handle_event({{_When,[_,"start_stop"],[1.0]},_Socket,_Ip}, State)->
-    gen_server:cast(karajan_clock, start),
-    {ok, State};
-handle_event({{_When,[_,"start_stop"],[0.0]},_Socket,_Ip}, State)->
-    gen_server:cast(karajan_clock, stop),
-    {ok, State};
 handle_event({{_When,["accxyz"],XYZ},_Socket,_Ip}, State)->
     gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ}),
     {ok, State};
