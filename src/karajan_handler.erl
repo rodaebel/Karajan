@@ -42,9 +42,6 @@ init(_Args) ->
 handle_event({{_When,["accxyz"],XYZ},_Socket,_Ip}, State)->
     gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ}),
     {ok, State};
-handle_event({{_When,[_,"scale"],S},_Socket,_Ip}, State)->
-    gen_server:cast(?WEBSOCKET_SERVER, {scale, S}),
-    {ok, State};
 handle_event({{_When,[_,"fader1"],S},_Socket,_Ip}, State)->
     gen_server:cast(?WEBSOCKET_SERVER, {scale, S}),
     {ok, State};
