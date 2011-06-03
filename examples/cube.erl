@@ -32,39 +32,57 @@ stop() ->
     gen_event:delete_handler(?EVENT_MANAGER, ?MODULE, []).
 
 %% @doc Initializes the handler.
-%% @spec init(Args) -> {ok, initialized}
+%% @spec init(Args) -> {ok, Clients}
 init(_Args) ->
-    {ok, initialized}.
+    Clients = sets:new(),
+    {ok, Clients}.
 
 %% @private
 %% @doc Handles events.
-%% @spec handle_event(Event, State) -> {ok, State}
-handle_event({{_When,["accxyz"],XYZ},_Socket,_Ip}, State)->
-    gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ}),
-    {ok, State};
-handle_event({{_When,[_,"fader1"],S},_Socket,_Ip}, State)->
+%% @spec handle_event(Event, Clients) -> {ok, Clients}
+handle_event({{_When,["accxyz"],XYZ},_Socket,Ip}, Clients)->
+    case sets:is_element(Ip, Clients) of
+        true ->
+            gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ}),
+            {ok, Clients};
+        false ->
+            {ok, Clients}
+    end;
+handle_event({{_When,[_,"fader1"],S},_Socket,_Ip}, Clients)->
     gen_server:cast(?WEBSOCKET_SERVER, {scale, S}),
-    {ok, State};
-handle_event(Event, State)->
+    {ok, Clients};
+handle_event({{_When,[_,"toggle1"],[1.0]},_Socket,Ip}, Clients)->
+    {ok, sets:add_element(Ip, Clients)};
+handle_event({{_When,[_,"toggle1"],[0.0]},_Socket,Ip}, Clients)->
+    {ok, sets:del_element(Ip, Clients)};
+handle_event({{message,"/1/fader1",V}, Socket}, Clients)->
+    Msg = {message,"/1/fader1",V},
+    Send = fun(Addr, Acc) ->
+        gen_udp:send(Socket, Addr, 7124, osc_lib:encode(Msg)),
+        Acc
+    end,
+    sets:fold(Send, [], Clients),
+    {ok, Clients};
+handle_event(Event, Clients)->
     error_logger:info_msg("~p ~p~n", [self(), Event]),
-    {ok, State}.
+    {ok, Clients}.
 
 %% @private
 %% @doc Handles call messages.
-%% @spec handle_call(Request, State) -> {ok, {error, bad_query}, Events}
-handle_call(_Request, State) ->
-    {ok, {error, bad_request}, State}.
+%% @spec handle_call(Request, Clients) -> {ok, {error, bad_query}, Events}
+handle_call(_Request, Clients) ->
+    {ok, {error, bad_request}, Clients}.
 
 %% @private
 %% @doc Handles all non call/cast messages.
-%% @spec handle_info(Info, State) -> {noreply, State}
-handle_info(_Info, State) ->
-    {noreply, State}.
+%% @spec handle_info(Info, Clients) -> {noreply, Clients}
+handle_info(_Info, Clients) ->
+    {noreply, Clients}.
 
 %% @private
 %% @doc Performs cleanup on termination.
 %% @spec terminate(Reason, State) -> ok
-terminate(_Reason, _Events) ->
+terminate(_Reason, _State) ->
     ok.
 
 %% @private
