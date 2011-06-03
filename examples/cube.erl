@@ -42,14 +42,15 @@ init(_Args) ->
 %% @spec handle_event(Event, Clients) -> {ok, Clients}
 handle_event({{_When,["accxyz"],XYZ},_Socket,Ip}, Clients)->
     case sets:is_element(Ip, Clients) of
-        true ->
-            gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ}),
-            {ok, Clients};
-        false ->
-            {ok, Clients}
-    end;
-handle_event({{_When,[_,"fader1"],S},_Socket,_Ip}, Clients)->
-    gen_server:cast(?WEBSOCKET_SERVER, {scale, S}),
+        true -> gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ});
+        false -> ok
+    end,
+    {ok, Clients};
+handle_event({{_When,[_,"fader1"],S},_Socket,Ip}, Clients)->
+    case sets:is_element(Ip, Clients) of
+        true -> gen_server:cast(?WEBSOCKET_SERVER, {scale, S});
+        false -> ok
+    end,
     {ok, Clients};
 handle_event({{_When,[_,"toggle1"],[1.0]},_Socket,Ip}, Clients)->
     {ok, sets:add_element(Ip, Clients)};
