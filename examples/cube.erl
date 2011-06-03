@@ -1,7 +1,7 @@
 %% @author Tobias Rodaebel
 %% @doc Karajan Event Handler
 
--module(karajan_handler).
+-module(cube).
 
 -behaviour(gen_event).
 
@@ -13,6 +13,8 @@
          terminate/2]).
 
 -define(EVENT_MANAGER, tosca_event).
+
+-define(WEBSOCKET_SERVER, {websocket_server, websocket@localhost}).
 
 %% @doc Starts the handler.
 %% @spec start(Options) -> already_started | ok
@@ -37,6 +39,12 @@ init(_Args) ->
 %% @private
 %% @doc Handles events.
 %% @spec handle_event(Event, State) -> {ok, State}
+handle_event({{_When,["accxyz"],XYZ},_Socket,_Ip}, State)->
+    gen_server:cast(?WEBSOCKET_SERVER, {accelerometer, XYZ}),
+    {ok, State};
+handle_event({{_When,[_,"fader1"],S},_Socket,_Ip}, State)->
+    gen_server:cast(?WEBSOCKET_SERVER, {scale, S}),
+    {ok, State};
 handle_event(Event, State)->
     error_logger:info_msg("~p ~p~n", [self(), Event]),
     {ok, State}.
