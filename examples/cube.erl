@@ -52,7 +52,7 @@ handle_event(Event, State)->
 %% @private
 %% @doc Handles call messages.
 %% @spec handle_call(Request, State) -> {ok, {error, bad_query}, Events}
-handle_call(_Query, State) ->
+handle_call(_Request, State) ->
     {ok, {error, bad_request}, State}.
 
 %% @private
