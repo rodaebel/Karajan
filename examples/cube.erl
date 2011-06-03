@@ -38,6 +38,17 @@ init(_Args) ->
     {ok, Clients}.
 
 %% @private
+%% @doc Broadcasts OSC message to given clients.
+%% @spec broadcast_message(Msg, Clients, Socket) -> any()
+broadcast_message(Msg, Clients, Socket) ->
+    {ok, Port} = application:get_env(tosca, outgoing_port),
+    Send = fun(Addr, Acc) ->
+        gen_udp:send(Socket, Addr, Port, osc_lib:encode(Msg)),
+        Acc
+    end,
+    sets:fold(Send, [], Clients).
+
+%% @private
 %% @doc Handles events.
 %% @spec handle_event(Event, Clients) -> {ok, Clients}
 handle_event({{_When,["accxyz"],XYZ},_Socket,Ip}, Clients)->
@@ -46,23 +57,22 @@ handle_event({{_When,["accxyz"],XYZ},_Socket,Ip}, Clients)->
         false -> ok
     end,
     {ok, Clients};
-handle_event({{_When,[_,"fader1"],S},_Socket,Ip}, Clients)->
+handle_event({{_When,[_,"fader1"],Value},Socket,Ip}, Clients)->
     case sets:is_element(Ip, Clients) of
-        true -> gen_server:cast(?WEBSOCKET_SERVER, {scale, S});
-        false -> ok
+        true ->
+            gen_server:cast(?WEBSOCKET_SERVER, {scale, Value}),
+            Peers = sets:subtract(Clients, sets:from_list([Ip])),
+            broadcast_message({message,"/1/fader1",Value}, Peers, Socket);
+        false ->
+            ok
     end,
     {ok, Clients};
 handle_event({{_When,[_,"toggle1"],[1.0]},_Socket,Ip}, Clients)->
     {ok, sets:add_element(Ip, Clients)};
 handle_event({{_When,[_,"toggle1"],[0.0]},_Socket,Ip}, Clients)->
     {ok, sets:del_element(Ip, Clients)};
-handle_event({{message,"/1/fader1",V}, Socket}, Clients)->
-    Msg = {message,"/1/fader1",V},
-    Send = fun(Addr, Acc) ->
-        gen_udp:send(Socket, Addr, 7124, osc_lib:encode(Msg)),
-        Acc
-    end,
-    sets:fold(Send, [], Clients),
+handle_event({{message,"/1/fader1",Value}, Socket}, Clients)->
+    broadcast_message({message,"/1/fader1",Value}, Clients, Socket),
     {ok, Clients};
 handle_event(Event, Clients)->
     error_logger:info_msg("~p ~p~n", [self(), Event]),
