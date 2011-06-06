@@ -1,4 +1,6 @@
+ifndef ERLC
 ERLC=erlc
+endif
 
 all: ../ebin/cube.beam ../ebin/ytremote.beam
 
