@@ -14,7 +14,9 @@
 
 -include_lib("kernel/src/inet_dns.hrl").
 
+-ifdef(EUNIT).
 -include_lib("eunit/include/eunit.hrl").
+-endif.
 
 -record(state, {port=null, socket=null, clients=null}).
 
@@ -95,6 +97,7 @@ process_dnsrec({ok, #dns_rec{anlist=[]}}) ->
 process_dnsrec({ok, #dns_rec{anlist=Records}}) ->
     process_records(Records, #client{}).
 
+-ifdef(EUNIT).
 %% @hidden
 process_dnsrec_test_() ->
     R = {ok,{dns_rec,{dns_header,0,true,'query',true,false,false,false,false,0},
@@ -122,6 +125,7 @@ process_dnsrec_test_() ->
      ?_assertEqual("_osc._udp.local", Domain),
      ?_assertEqual("Joshua.local", Host),
      ?_assertEqual(7124, Port)].
+-endif.
 
 %% @private
 %% @doc Process DNS resource records.
