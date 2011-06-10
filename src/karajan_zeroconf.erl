@@ -80,7 +80,6 @@ handle_info({udp, _Socket, _Ip, _Port, Packet},
             {noreply, State};
         [Client] ->
             Dict = dict:store(Client#client.key, Client, Clients),
-            error_logger:info_msg("~p ~p~n", [self(), Client]),
             {noreply, #state{port=Port,socket=Socket,clients=Dict}}
     end;
 handle_info(_Info, State) ->
