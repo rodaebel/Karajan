@@ -59,8 +59,10 @@ init([]) ->
 %% @doc Handles call messages.
 %% @spec handle_call(Request, From, State) -> {reply, Reply, State} |
 %%                                            {noreply, State}
-handle_call(get_clients, _From, State) ->
+handle_call(clients, _From, State) ->
     {reply, dict:fetch_keys(State#state.clients), State};
+handle_call({client, Key}, _From, State) ->
+    {reply, dict:fetch(Key, State#state.clients), State};
 handle_call(_Request, _From, State) ->
     {noreply, State}.
 
