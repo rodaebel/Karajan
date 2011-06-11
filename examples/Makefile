@@ -2,10 +2,10 @@ ifndef ERLC
 ERLC=erlc
 endif
 
-all: ../ebin/cube.beam ../ebin/ytremote.beam
+all: cube.beam ytremote.beam
 
-../ebin/%.beam: %.erl
-	$(ERLC) -o ../ebin $<
+%.beam: %.erl
+	$(ERLC) $<
 
 clean:
-	rm -f ../ebin/cube.beam ../ebin/ytremote.beam
+	rm -f cube.beam ytremote.beam
