@@ -98,8 +98,6 @@ ERL_OPTS="
     $MODULES_PATH \
     -s karajan -s tosca"
 
-echo $ERL_OPTS
-
 if [ "$MONITOR" = "false" ]; then
     eval $ERL $ERL_OPTS $DETACHED_OPTION start -noshell
 else
