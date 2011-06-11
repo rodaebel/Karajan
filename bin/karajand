@@ -1,10 +1,12 @@
 #!/bin/sh
 
 BASENAME=`basename $0`
-MONITOR="false"
-DETACHED_OPTION=""
 CONFIG=""
 COOKIE="cookie"
+DETACHED_OPTION=""
+MODULES_PATH=""
+MONITOR="false"
+
 if [ -z "$ERL" ]; then
    ERL=erl
 fi
@@ -48,12 +50,20 @@ Options:
    -d,--detached        starts the service detached from the system console
    -h,--help            display this message
    -m,--monitor         run monitor
+      --path=PATH       additional code search path
 
 EOF
    exit 0;;
 
    --monitor | -m)
       MONITOR="true" ;;
+
+   --path=*)
+      arg=$_optarg;
+      if [[ $arg = `echo $arg | sed 's,^\/.*,,g'` ]]; then
+        arg=$PWD/$arg;
+      fi
+      MODULES_PATH="$MODULES_PATH -pz $arg" ;;
 
    --* | -* ) {
       echo "$BASENAME: illegal option $_option; use --help to show usage" 1>&2;
@@ -69,7 +79,7 @@ if [[ $CONFIG = `echo $CONFIG | sed 's,^\/.*,,g'` ]]; then
     CONFIG=$PWD/$CONFIG;
 fi
 
-if test -f "$CONFIG"; then
+if [ -f "$CONFIG" ]; then
     CONFIG="-config $CONFIG";
 else
     CONFIG=""
@@ -85,7 +95,10 @@ ERL_OPTS="
     -pa $CWD/deps/tosca/ebin \
     -sname karajan@localhost \
     $CONFIG \
+    $MODULES_PATH \
     -s karajan -s tosca"
+
+echo $ERL_OPTS
 
 if [ "$MONITOR" = "false" ]; then
     eval $ERL $ERL_OPTS $DETACHED_OPTION start -noshell
