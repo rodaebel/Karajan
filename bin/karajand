@@ -6,6 +6,8 @@ COOKIE="cookie"
 DETACHED_OPTION=""
 MODULES_PATH=""
 MONITOR="false"
+INCOMING_PORT=""
+OUTGOING_PORT=""
 
 if [ -z "$ERL" ]; then
    ERL=erl
@@ -49,14 +51,24 @@ Options:
       --cookie=COOKIE   use this cookie
    -d,--detached        starts the service detached from the system console
    -h,--help            display this message
+      --incoming-port=PORT
+                        use this port for incoming messages
    -m,--monitor         run monitor
+      --outgoing-port=PORT
+                        use this port for outgoing messages
       --path=PATH       additional code search path
 
 EOF
    exit 0;;
 
+   --incoming-port=*)
+      INCOMING_PORT=$_optarg ;;
+
    --monitor | -m)
       MONITOR="true" ;;
+
+   --outgoing-port=*)
+      OUTGOING_PORT=$_optarg ;;
 
    --path=*)
       arg=$_optarg;
@@ -95,8 +107,19 @@ ERL_OPTS="
     -pa $CWD/deps/tosca/ebin \
     -sname karajan@localhost \
     $CONFIG \
-    $MODULES_PATH \
-    -s karajan -s tosca"
+    $MODULES_PATH"
+
+if [ ! -z "$INCOMING_PORT" ]; then
+    ERL_OPTS="$ERL_OPTS -incoming_port $INCOMING_PORT"
+fi
+
+if [ ! -z "$OUTGOING_PORT" ]; then
+    ERL_OPTS="$ERL_OPTS -outgoing_port $OUTGOING_PORT"
+fi
+
+ERL_OPTS="$ERL_OPTS -s karajan -s tosca"
+
+echo $ERL_OPTS
 
 if [ "$MONITOR" = "false" ]; then
     eval $ERL $ERL_OPTS $DETACHED_OPTION start -noshell
