@@ -119,8 +119,6 @@ fi
 
 ERL_OPTS="$ERL_OPTS -s karajan -s tosca"
 
-echo $ERL_OPTS
-
 if [ "$MONITOR" = "false" ]; then
     eval $ERL $ERL_OPTS $DETACHED_OPTION start -noshell
 else
